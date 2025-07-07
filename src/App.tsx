@@ -242,13 +242,33 @@ const App = () => {
             console.error("WebXRの初期化に失敗しました: ", e);
         });
 
-        // シーンのレンダリングループを開始
-        const renderLoop = () => {
-            if (scene && !scene.isDisposed) {
+        // --- シーンのレンダリングループを開始 ---
+        engine.runRenderLoop(() => {
+            // シーンとアクティブなカメラが利用可能なことを確認
+            if (scene && !scene.isDisposed && scene.activeCamera) {
+                // アクティブカメラの視錐台（表示領域）を取得
+                const frustumPlanes = scene.frustumPlanes;
+
+                // frustumPlanesが正しく取得できた場合のみ、表示チェックを実行
+                if (frustumPlanes && frustumPlanes.length > 0) {
+                    // 立方体とラベルの表示/非表示をチェックするヘルパー関数
+                    const checkVisibility = (box: Mesh, label: TextBlock) => {
+                        // isFrustumは、メッシュが視錐台に部分的にも入っている場合にtrueを返す
+                        const isVisible = box.isInFrustum(frustumPlanes);
+                        box.isVisible = isVisible;
+                        label.isVisible = isVisible;
+                    };
+
+                    // 各立方体とラベルの可視性を更新
+                    checkVisibility(redBox, redLabel);
+                    checkVisibility(blueBox, blueLabel);
+                    checkVisibility(yellowBox, yellowLabel);
+                }
+
+                // 最後にシーンをレンダリング
                 scene.render();
             }
-        };
-        engine.runRenderLoop(renderLoop);
+        });
         
         // ウィンドウのリサイズ時にエンジンのサイズも変更
         const handleResize = () => {
